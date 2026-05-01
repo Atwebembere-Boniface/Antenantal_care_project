@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+
+{% block title %}SMS History - ANC{% endblock %}
+
+{% block panel_title %}Communication Registry{% endblock %}
+
+{% block extra_head %}
+<style>
+    :root {
+        --primary-navy: #1a2c3f;
+        --accent-orange: #e67e22;
+        --bg-light: #f8f9fa;
+    }
+
+    .log-header {
+        border-left: 5px solid var(--accent-orange);
+        padding-left: 1.25rem;
+    }
+
+    .table-krrh {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .table-krrh thead {
+        background-color: var(--primary-navy);
+        color: white;
+    }
+
+    .table-krrh thead th {
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        border: none;
+        padding: 1rem 0.75rem;
+    }
+
+    .badge-navy {
+        background-color: var(--primary-navy);
+        color: white;
+        border-radius: 2px;
+    }
+
+    .btn-brand-solid {
+        background-color: var(--accent-orange);
+        color: white;
+        border: none;
+        border-radius: 0;
+        font-weight: 700;
+        transition: all 0.3s ease;
+    }
+
+    .btn-brand-solid:hover {
+        background-color: #cf6d1d;
+        transform: translateY(-1px);
+        color: white;
+    }
+
+    .btn-brand-outline {
+        border: 2px solid var(--primary-navy);
+        color: var(--primary-navy);
+        border-radius: 0;
+        font-weight: 700;
+        transition: all 0.3s ease;
+    }
+
+    .btn-brand-outline:hover {
+        background-color: var(--primary-navy);
+        color: white;
+    }
+
+    .countdown-card {
+        background: linear-gradient(135deg, var(--primary-navy) 0%, #2c3e50 100%);
+        border-radius: 0;
+        border: none;
+    }
+
+    .status-pill {
+        font-size: 0.75rem;
+        font-weight: 800;
+        padding: 0.4rem 0.8rem;
+        border-radius: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div class="log-header">
+            <h2 class="fw-bold mb-0" style="color: var(--primary-navy);">SMS History</h2>
+            <p class="text-muted mb-0 small text-uppercase fw-bold opacity-75">Audit trail for patient notifications and reminders.</p>
+        </div>
+        
+        <div class="d-flex gap-2">
+            {% if user.role == 'ADMIN' %}
+            <form action="{% url 'reminders:trigger_bulk_sms' %}" method="POST">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-brand-outline px-3" onclick="return confirm('Send welcome/update SMS to all registered patients?')">
+                    <i class="bi bi-megaphone-fill me-2"></i>Notify All
+                </button>
+            </form>
+            {% endif %}
+
+            <form action="{% url 'reminders:trigger_reminders' %}" method="POST">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-brand-solid shadow-sm px-3">
+                    <i class="bi bi-calendar-check-fill me-2"></i>Dispatch Reminders
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="row mb-4 g-3">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 bg-white" style="border-radius: 0;">
+                <div class="card-body d-flex flex-column justify-content-center">
+                    <h6 class="text-muted small text-uppercase fw-bold mb-2">Total Logs</h6>
+                    <h2 class="fw-bold mb-0" style="color: var(--accent-orange);">{{ reminders.count }}</h2>
+                </div>
+            </div>
+        </div>
+
+        {% if target_time %}
+        <div class="col-md-9">
+            <div class="card shadow-sm text-white h-100 countdown-card">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-white-50 small text-uppercase mb-1 fw-bold">Auto-Dispatch Countdown</h6>
+                        <h3 class="mb-0 fw-bold" id="countdown-display" style="color: #f1c40f; letter-spacing: 1px;">
+                            Initializing...
+                        </h3>
+                    </div>
+                    <div class="text-end d-none d-sm-block">
+                        <i class="bi bi-clock-history fs-1 text-white-50 opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="card shadow-sm border-0 overflow-hidden" style="border-radius: 0;">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 table-krrh">
+                <thead>
+                    <tr class="small text-uppercase">
+                        <th class="ps-4">Recipient</th>
+                        <th>Type</th>
+                        <th>Content</th>
+                        <th>Timestamp</th>
+                        <th class="pe-4">Delivery Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in reminders %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="fw-bold text-dark">{{ log.patient.user.get_full_name }}</div>
+                            <code class="text-muted" style="font-size: 0.85rem;">{{ log.patient.user.phone_number }}</code>
+                        </td>
+                        <td>
+                            <span class="badge badge-navy px-2 py-1">Visit {{ log.visit.visit_number }}</span>
+                            <div class="small text-muted mt-1 fw-bold">{{ log.channel|upper }}</div>
+                        </td>
+                        <td>
+                            <div class="text-muted small" style="max-width: 350px; line-height: 1.4;" title="{{ log.message_content }}">
+                                {{ log.message_content|truncatechars:85 }}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="small fw-bold text-dark">{{ log.date_sent|date:"d M, Y" }}</div>
+                            <div class="small text-muted">{{ log.date_sent|date:"H:i" }}</div>
+                        </td>
+                        <td class="pe-4">
+                            {% if log.status == 'SENT' %}
+                                <span class="badge bg-success-subtle text-success border border-success status-pill">
+                                    <i class="bi bi-check-all me-1"></i> SENT
+                                </span>
+                            {% elif log.status == 'FAILED' %}
+                                <span class="badge bg-danger-subtle text-danger border border-danger status-pill">
+                                    <i class="bi bi-x-circle-fill me-1"></i> FAILED
+                                </span>
+                            {% else %}
+                                <span class="badge bg-light text-dark border status-pill">
+                                    {{ log.status|upper }}
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+                            <div class="opacity-25 mb-3">
+                                <i class="bi bi-chat-square-dots" style="font-size: 4rem;"></i>
+                            </div>
+                            <h5 class="text-muted fw-bold">No communication logs recorded yet.</h5>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if target_time %}
+<script>
+    (function() {
+        const targetDate = new Date("{{ target_time|escapejs }}").getTime();
+        const display = document.getElementById("countdown-display");
+
+        function updateTimer() {
+            const now = new Date().getTime();
+            const distance = targetDate - now;
+
+            if (distance < 0) {
+                display.innerHTML = '<span class="text-white">DISPATCH IN PROGRESS...</span>';
+                return;
+            }
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            let timeString = "";
+            if(days > 0) timeString += `${days}d `;
+            timeString += `${hours}h ${minutes}m ${seconds}s`;
+            
+            display.innerText = timeString;
+        }
+
+        updateTimer();
+        setInterval(updateTimer, 1000);
+    })();
+</script>
+{% endif %}
+{% endblock %}

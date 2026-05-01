@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% block title %}Patient Registry - KRRH{% endblock %}
+
+{% block panel_title %}Patient Registry{% endblock %}
+
+{% block extra_head %}
+<style>
+    :root {
+        --primary-navy: #1a2c3f;
+        --accent-orange: #e67e22;
+    }
+
+    /* Professional Table Header */
+    .table-krrh thead {
+        background-color: var(--primary-navy);
+        color: white;
+    }
+
+    .avatar-circle {
+        background-color: var(--accent-orange);
+        color: white;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0;
+    }
+
+    .badge-navy {
+        background-color: var(--primary-navy);
+        color: white;
+        border-radius: 0;
+    }
+
+    .btn-brand-solid {
+        background-color: var(--accent-orange);
+        color: white;
+        border: none;
+        border-radius: 0;
+        transition: 0.3s;
+        font-weight: 600;
+    }
+
+    .btn-brand-solid:hover {
+        background-color: #d35400;
+        color: white;
+    }
+
+    .btn-brand-outline {
+        border: 1px solid var(--primary-navy);
+        color: var(--primary-navy);
+        border-radius: 0;
+        font-weight: 600;
+        transition: 0.3s;
+    }
+
+    .btn-brand-outline:hover {
+        background-color: var(--primary-navy);
+        color: white;
+    }
+
+    .pulse-dot-orange {
+        height: 8px;
+        width: 8px;
+        background-color: var(--accent-orange);
+        border-radius: 50%;
+        display: inline-block;
+        animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(230, 126, 34, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(230, 126, 34, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(230, 126, 34, 0); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="section-header mb-0">
+        <h2 class="fw-bold" style="color: var(--primary-navy);">Mother Registry</h2>
+        <p class="text-muted">Total registered mothers: <span class="fw-bold" style="color: var(--accent-orange);">{{ patients.count }}</span></p>
+    </div>
+    {% if user.role == 'ADMIN' or user.is_superuser %}
+    <a href="{% url 'accounts:register_patient' %}" class="btn btn-brand-solid px-4 shadow-sm">
+        <i class="bi bi-person-plus-fill me-2"></i>REGISTER NEW MOTHER
+    </a>
+    {% endif %}
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 table-krrh">
+            <thead>
+                <tr class="text-uppercase small">
+                    <th class="ps-4">Mother</th>
+                    <th>Phone</th>
+                    <th>Status</th>
+                    <th>EDD</th>
+                    <th>Alerts</th>
+                    <th class="text-end pe-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in patients %}
+                <tr>
+                    <td class="ps-4">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="avatar-circle" style="width:38px; height:38px; font-size:.8rem;">
+                                {{ p.user.first_name|first|upper }}{{ p.user.last_name|first|upper }}
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark">{{ p.user.get_full_name }}</div>
+                                <div class="text-muted" style="font-size:.72rem;">ID #{{ p.user.id|add:1000 }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="small text-muted">{{ p.user.phone_number|default:"—" }}</td>
+                    <td><span class="badge badge-navy">{{ p.pregnancy_period }} Weeks</span></td>
+                    <td class="small fw-bold" style="color: var(--accent-orange);">{{ p.edd|date:"d M Y" }}</td>
+                    <td>
+                        {% if p.email_alerts_active %}
+                            <span class="d-flex align-items-center gap-2">
+                                <span class="pulse-dot-orange"></span>
+                                <span class="small fw-bold text-uppercase" style="color: var(--accent-orange); font-size: .7rem;">Active</span>
+                            </span>
+                        {% else %}
+                            <span class="badge bg-light text-muted border" style="font-size:.7rem;">Stopped</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end pe-4">
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'accounts:patient_detail' p.pk %}" class="btn btn-brand-outline btn-sm px-3">
+                                <i class="bi bi-eye me-1"></i> Records
+                            </a>
+                            {% if user.role == 'ADMIN' or user.is_superuser %}
+                            <form action="{% url 'accounts:toggle_alerts' p.pk %}" method="POST" class="d-inline">
+                                {% csrf_token %}
+                                <button class="btn btn-sm {% if p.email_alerts_active %}btn-outline-secondary{% else %}btn-brand-solid{% endif %}">
+                                    <i class="bi bi-{% if p.email_alerts_active %}pause-fill{% else %}play-fill{% endif %}"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-5 text-muted">
+                        <i class="bi bi-people mb-2" style="font-size:3rem; color: #dee2e6;"></i>
+                        <p class="mt-2 mb-1 fw-bold">No patients registered in the database.</p>
+                        <a href="{% url 'accounts:register_patient' %}" class="btn btn-sm btn-brand-solid mt-2">Add First Entry</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

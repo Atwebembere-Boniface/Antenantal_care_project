@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Staff Registration - KRRH{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-4">
+    <div class="col-md-6 col-lg-5">
+        <div class="section-header mb-4 text-center" style="border-left:none;padding-left:0;">
+            <h2 style="color:var(--green-dark);">Staff Registration</h2>
+            <p>Doctors &amp; Nurses — KRRH Antenatal Unit</p>
+        </div>
+        <div class="card shadow-sm">
+            <div class="card-header py-3" style="background:var(--green-dark);">
+                <h6 class="mb-0 text-white fw-700"><i class="bi bi-person-badge-fill me-2"></i>Create Staff Account</h6>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label class="form-label fw-700 small" style="color:var(--green-dark);">{{ field.label }}</label>
+                        {% if field.field.widget.input_type == 'select' %}
+                            <select name="{{ field.html_name }}" class="form-select {% if field.errors %}is-invalid{% endif %}">
+                                {% for choice in field.field.choices %}
+                                <option value="{{ choice.0 }}" {% if field.value == choice.0 %}selected{% endif %}>{{ choice.1 }}</option>
+                                {% endfor %}
+                            </select>
+                        {% else %}
+                            <input type="{{ field.field.widget.input_type }}"
+                                   name="{{ field.html_name }}"
+                                   class="form-control {% if field.errors %}is-invalid{% endif %}"
+                                   value="{{ field.value|default:'' }}"
+                                   {% if field.field.required %}required{% endif %}
+                                   style="border-radius:8px;">
+                        {% endif %}
+                        {% for e in field.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                        {% if field.help_text %}<div class="form-text small">{{ field.help_text }}</div>{% endif %}
+                    </div>
+                    {% endfor %}
+                    
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger py-2 small">
+                        {% for e in form.non_field_errors %}{{ e }}{% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <button type="submit" class="btn btn-green w-100 py-2 fw-700 mt-2" style="border-radius:8px;">
+                        <i class="bi bi-person-check me-2"></i>Create Account
+                    </button>
+                </form>
+            </div>
+            <div class="card-footer text-center small text-muted py-3">
+                Already registered? <a href="{% url 'accounts:login' %}" style="color:var(--orange-main);font-weight:700;">Login here</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

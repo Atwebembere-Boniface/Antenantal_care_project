@@ -1,0 +1,86 @@
+<div id="chat-wrapper" style="position: fixed; bottom: 30px; right: 30px; z-index: 9999;">
+    <button id="toggle-chat" class="btn btn-dark shadow-lg border-0 d-flex align-items-center justify-content-center" 
+            style="width: 60px; height: 60px; border-radius: 0;">
+        <i class="bi bi-chat-dots fs-4"></i>
+    </button>
+
+    <div id="chat-box" class="card shadow-lg d-none border-0" style="width: 350px; border-radius: 0; bottom: 70px; right: 0; position: absolute;">
+        <div class="card-header bg-dark text-white py-3 border-0 d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 fw-bold small text-uppercase">ANC Digital Assistant</h6>
+            <button class="btn-close btn-close-white btn-sm" id="close-chat"></button>
+        </div>
+        <div class="card-body bg-light" id="chat-window" style="height: 350px; overflow-y: auto; font-size: 0.85rem;">
+            <div class="mb-2 text-muted">Hello! I can help you with pregnancy advice and visit info.</div>
+        </div>
+        <div class="card-footer bg-white border-top">
+            <div class="input-group">
+                <input type="text" id="user-input" class="form-control border-0 bg-light small" style="border-radius: 0;" placeholder="Type or use mic...">
+                <button id="mic-btn" class="btn btn-light border-0" style="border-radius: 0;"><i class="bi bi-mic-fill text-danger"></i></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const chatBox = document.getElementById('chat-box');
+    const toggleBtn = document.getElementById('toggle-chat');
+    const closeBtn = document.getElementById('close-chat');
+    const micBtn = document.getElementById('mic-btn');
+    const userInput = document.getElementById('user-input');
+    const chatWindow = document.getElementById('chat-window');
+
+    // Toggle Chat Visibility
+    toggleBtn.onclick = () => chatBox.classList.toggle('d-none');
+    closeBtn.onclick = () => chatBox.classList.add('d-none');
+
+    // Browser Speech-to-Text
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        micBtn.onclick = () => {
+            recognition.start();
+            micBtn.innerHTML = '<i class="bi bi-record-circle text-danger blink"></i>';
+        };
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            userInput.value = transcript;
+            sendToBot(transcript);
+            micBtn.innerHTML = '<i class="bi bi-mic-fill text-danger"></i>';
+        };
+    }
+
+    // Send data to Django
+    async function sendToBot(message) {
+        if (!message) return;
+        appendMessage('User', message);
+        userInput.value = '';
+
+        const response = await fetch("{% url 'chatbot:chat_with_voice' %}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: message })
+        });
+        const data = await response.json();
+        
+        appendMessage('Bot', data.bot_text);
+        if (data.audio_base64) {
+            const audio = new Audio("data:audio/mp3;base64," + data.audio_base64);
+            audio.play();
+        }
+    }
+
+    function appendMessage(sender, text) {
+        const div = document.createElement('div');
+        div.className = `mb-2 p-2 ${sender === 'Bot' ? 'bg-white border' : 'bg-primary text-white text-end'}`;
+        div.innerHTML = `<strong>${sender}:</strong> ${text}`;
+        chatWindow.appendChild(div);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    userInput.onkeypress = (e) => { if (e.key === 'Enter') sendToBot(userInput.value); };
+</script>
+
+<style>
+    .blink { animation: blinker 1s linear infinite; }
+    @keyframes blinker { 50% { opacity: 0; } }
+</style>

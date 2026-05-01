@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% block title %}Staff Dashboard - KRRH{% endblock %}
+
+{% block panel_title %}Medical Staff Control Panel{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --sidebar-navy: #1a2d42;
+        --accent-teal: #16a085;
+        --accent-orange: #e67e22;
+        --accent-blue: #2980b9;
+    }
+    .card-header-navy {
+        background-color: var(--sidebar-navy) !important;
+        color: #ffffff !important;
+    }
+    .stat-value { font-size: 2rem; font-weight: 700; }
+</style>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-white h-100" style="background: var(--sidebar-navy);">
+            <div class="p-4 d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="stat-value mb-0">{{ patients.count }}</h2>
+                    <p class="mb-0 text-uppercase small fw-bold opacity-75">My Assigned Patients</p>
+                    <a href="{% url 'accounts:patient_list' %}" class="btn btn-sm btn-light mt-3 py-1 px-3 fw-bold border-0" style="font-size: 0.7rem; border-radius: 4px; color: var(--sidebar-navy);">
+                        VIEW LIST <i class="bi bi-people-fill ms-1"></i>
+                    </a>
+                </div>
+                <i class="bi bi-person-heart opacity-25" style="font-size: 3rem;"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-white h-100" style="background: var(--accent-orange);">
+            <div class="p-4 d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="stat-value mb-0">{{ my_today_count }}</h2>
+                    <p class="mb-0 text-uppercase small fw-bold opacity-75">Appointments Today</p>
+                    <a href="{% url 'accounts:appointment_management' %}" class="btn btn-sm btn-light mt-3 py-1 px-3 fw-bold border-0" style="font-size: 0.7rem; border-radius: 4px; color: var(--accent-orange);">
+                        OPEN CALENDAR <i class="bi bi-calendar3 ms-1"></i>
+                    </a>
+                </div>
+                <i class="bi bi-clock-history opacity-25" style="font-size: 3rem;"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-white h-100" style="background: var(--accent-blue);">
+            <div class="p-4 d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="stat-value mb-0">{{ total_scheduled|default:"0" }}</h2>
+                    <p class="mb-0 text-uppercase small fw-bold opacity-75">Total Scheduled Visits</p>
+                    <div class="mt-3 small opacity-75"><i class="bi bi-info-circle me-1"></i> Ongoing clinical schedule</div>
+                </div>
+                <i class="bi bi-calendar-check opacity-25" style="font-size: 3rem;"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 8px; overflow: hidden;">
+            <div class="card-header card-header-navy py-3 d-flex justify-content-between align-items-center border-0">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-person-lines-fill me-2 text-warning"></i>My Assigned Patients</h6>
+                <span class="badge bg-white text-dark fw-bold">Total: {{ patients.count }}</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr style="font-size: 0.75rem;" class="text-uppercase text-muted">
+                                <th class="ps-4">Patient Name</th>
+                                <th>Stage</th>
+                                <th>EDD</th>
+                                <th>Last Visit Notes</th>
+                                <th class="text-end pe-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in patients %}
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="fw-bold text-dark">{{ p.user.get_full_name }}</div>
+                                    <div class="small text-muted">{{ p.user.phone_number }}</div>
+                                </td>
+                                <td><span class="badge bg-info-subtle text-info border border-info border-opacity-25" style="border-radius:4px;">{{ p.pregnancy_period }} Weeks</span></td>
+                                <td class="small fw-semibold">{{ p.edd|date:"d M Y" }}</td>
+                                <td class="small text-truncate" style="max-width: 150px;">
+                                    {{ p.anc_visits.last.clinical_notes|default:"No history yet" }}
+                                </td>
+                                <td class="text-end pe-4">
+                                    <a href="{% url 'accounts:patient_detail' p.pk %}" class="btn btn-sm btn-outline-dark px-3 fw-bold" style="border-radius: 4px; font-size: 0.7rem;">
+                                        DETAILS
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center py-5 text-muted italic">No patients assigned to you yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 8px; overflow: hidden;">
+            <div class="card-header card-header-navy py-3 border-0">
+                <h6 class="mb-0 fw-bold text-uppercase small"><i class="bi bi-stopwatch me-2 text-warning"></i>Today's Hourly Load</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for slot in hourly_slots %}
+                    <div class="list-group-item py-3 {% if slot.is_full %}bg-danger bg-opacity-10{% endif %}">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-bold small text-dark" style="letter-spacing: 0.5px;">{{ slot.label }}</span>
+                            <span class="badge {% if slot.is_full %}bg-danger{% else %}bg-dark{% endif %}" style="border-radius: 4px;">
+                                {{ slot.count }} / 2
+                            </span>
+                        </div>
+                        <div class="d-flex flex-wrap gap-1">
+                            {% for a in slot.appointments %}
+                                <span class="badge bg-white text-dark border shadow-sm small fw-normal">
+                                    <i class="bi bi-person-fill me-1 text-primary"></i>{{ a.patient.user.last_name }}
+                                </span>
+                            {% empty %}
+                                <span class="small text-muted opacity-50 italic" style="font-size: 0.7rem;">No bookings</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="card-footer bg-light border-0 py-3 text-center">
+                <small class="text-muted italic" style="font-size: 0.7rem;">Schedule automatically locks at 2 patients per hour.</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

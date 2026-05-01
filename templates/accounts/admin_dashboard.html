@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard - KRRH{% endblock %}
+
+{% block panel_title %}Administrator Control Panel{% endblock %}
+
+{% block extra_head %}
+<style>
+    :root {
+        --primary-navy: #1a2c3f;
+        --accent-orange: #e67e22;
+        --bg-light: #f8f9fa;
+    }
+    .stat-card-navy { background: var(--primary-navy); border-radius: 0; }
+    .stat-card-orange { background: var(--accent-orange); border-radius: 0; }
+    .btn-outline-white { 
+        border: 1px solid rgba(255,255,255,0.5); 
+        color: white; 
+        background: transparent;
+        transition: 0.3s;
+        border-radius: 0;
+        font-size: 0.7rem;
+    }
+    .btn-outline-white:hover { background: white; color: var(--primary-navy); }
+    .progress { background-color: #e9ecef; border-radius: 0; }
+    .progress-bar-navy { background-color: var(--primary-navy); }
+    .progress-bar-orange { background-color: var(--accent-orange); }
+    .list-group-item-action {
+        transition: 0.2s;
+        border-left: 4px solid transparent;
+    }
+    .list-group-item-action:hover { 
+        border-left: 4px solid var(--accent-orange); 
+        background-color: var(--bg-light); 
+        padding-left: 1.5rem !important;
+    }
+    .table thead { background-color: var(--primary-navy) !important; color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-white h-100 stat-card-navy">
+            <div class="p-4 d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="fw-bold mb-0">{{ total_patients }}</h2>
+                    <p class="mb-0 text-uppercase small fw-bold opacity-75">Registered Mothers</p>
+                    <a href="{% url 'accounts:patient_list' %}" class="btn btn-outline-white mt-3 px-3 fw-bold">
+                        VIEW ALL <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <i class="bi bi-people-fill opacity-25" style="font-size: 3rem;"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-white h-100 stat-card-orange">
+            <div class="p-4 d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="fw-bold mb-0">{{ today_visits }}</h2>
+                    <p class="mb-0 text-uppercase small fw-bold opacity-75">Today's Visits</p>
+                    {% if today_visits > 0 %}
+                    <button class="btn btn-outline-white mt-3 px-3 fw-bold" data-bs-toggle="collapse" data-bs-target="#todayAppointments">
+                        VIEW SCHEDULE <i class="bi bi-eye-fill ms-1"></i>
+                    </button>
+                    {% else %}
+                    <p class="small mt-2 opacity-75 mb-0 font-italic">No visits scheduled</p>
+                    {% endif %}
+                </div>
+                <i class="bi bi-calendar-check opacity-25" style="font-size: 3rem;"></i>
+            </div>
+            <div class="collapse" id="todayAppointments">
+                <div class="p-3">
+                    {% for appt in today_appointments %}
+                    <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom border-white border-opacity-10">
+                        <div class="small">
+                            <div class="fw-bold">{{ appt.patient.user.get_full_name }}</div>
+                            <div class="opacity-75" style="font-size: 0.7rem;">{{ appt.hour }}:00 - Dr. {{ appt.doctor.last_name }}</div>
+                        </div>
+                        <span class="badge border border-white small">{{ appt.status }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-white h-100 stat-card-navy">
+            <div class="p-4 d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="fw-bold mb-0">{{ total_staff|default:"0" }}</h2>
+                    <p class="mb-0 text-uppercase small fw-bold opacity-75">Medical Staff</p>
+                    <a href="{% url 'accounts:staff_list' %}" class="btn btn-outline-white mt-3 px-3 fw-bold">
+                        MANAGE STAFF <i class="bi bi-person-badge ms-1"></i>
+                    </a>
+                </div>
+                <i class="bi bi-shield-check opacity-25" style="font-size: 3rem;"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 0;">
+            <div class="card-header py-3" style="background: var(--primary-navy); color: white; border-radius: 0;">
+                <h6 class="mb-0 fw-bold small text-uppercase"><i class="bi bi-lightning-fill me-2 text-warning"></i>Quick Actions</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'accounts:register_patient' %}" class="list-group-item list-group-item-action py-3 border-0">
+                        <i class="bi bi-person-plus me-3" style="color: var(--accent-orange);"></i>Register New Mother
+                    </a>
+                    <a href="/admin/" target="_blank" class="list-group-item list-group-item-action py-3 border-0">
+                        <i class="bi bi-hdd-network me-3" style="color: var(--accent-orange);"></i>System Database
+                    </a>
+                    <a href="{% url 'accounts:generate_mothers_report' %}" class="list-group-item list-group-item-action py-3 border-0">
+                        <i class="bi bi-file-earmark-pdf-fill me-3" style="color: var(--accent-orange);"></i>Generate PDF Report
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm h-100" style="border-radius: 0;">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-bar-chart-line-fill me-2" style="color: var(--accent-orange);"></i>Staff Workload Monitoring</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr style="font-size: 0.75rem;" class="text-uppercase">
+                                <th class="ps-4">Staff Member</th>
+                                <th>Role</th>
+                                <th>Workload</th>
+                                <th class="text-end pe-4">Visits Today</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for staff in all_staff %}
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="text-white d-flex align-items-center justify-content-center fw-bold me-3 shadow-sm" 
+                                             style="width: 35px; height: 35px; background: var(--accent-orange); font-size: 0.8rem;">
+                                            {{ staff.first_name|first|upper }}{{ staff.last_name|first|upper }}
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark">Dr. {{ staff.get_full_name|default:staff.username }}</div>
+                                            <div class="small text-muted">{{ staff.email }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="badge border text-dark font-weight-normal">{{ staff.get_role_display }}</span></td>
+                                <td style="width: 30%;">
+                                    <div class="progress" style="height: 6px;">
+                                        <div class="progress-bar {% if staff.current_workload >= 5 %}progress-bar-orange{% else %}progress-bar-navy{% endif %}" 
+                                             style="width:{{ staff.current_workload }}0%;"></div>
+                                    </div>
+                                </td>
+                                <td class="text-end pe-4 fw-bold" style="color: var(--primary-navy);">{{ staff.current_workload }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-center py-4 text-muted small">No active staff records found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

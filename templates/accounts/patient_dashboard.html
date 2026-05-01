@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% block title %}My Journey - KRRH ANC{% endblock %}
+
+{% block panel_title %}Maternal Health Dashboard{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body text-center py-4">
+                <div class="mx-auto mb-3 d-flex align-items-center justify-content-center bg-primary text-white shadow-sm overflow-hidden" 
+                     style="width: 80px; height: 80px; font-size: 2rem; font-weight: 800; border-radius: 50%;">
+                    {% if user.profile_picture %}
+                        <img src="{{ user.profile_picture.url }}" alt="Profile" style="width:100%; height:100%; object-fit:cover;">
+                    {% else %}
+                        {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+                    {% endif %}
+                </div>
+                <h4 class="fw-bold text-dark mb-1">{{ user.get_full_name|default:user.username }}</h4>
+                <p class="text-muted small text-uppercase fw-bold mb-3" style="letter-spacing: 1px;">Patient ID: #{{ user.id|add:1000 }}</p>
+                
+                <a href="{% url 'accounts:profile_update' %}" class="btn btn-outline-primary btn-sm mb-4 px-3 rounded-pill">
+                    <i class="bi bi-pencil-square me-1"></i> Edit Profile
+                </a>
+
+                {% if profile %}
+                <div class="row g-0 border-top border-bottom py-3">
+                    <div class="col-4 border-end">
+                        <div class="h4 fw-bold mb-0 text-primary">{{ profile.pregnancy_period|default:"?" }}</div>
+                        <div class="small text-muted fw-bold" style="font-size: 0.65rem;">WEEKS</div>
+                    </div>
+                    <div class="col-4 border-end">
+                        <div class="h4 fw-bold mb-0 text-success">{{ attended_count|default:0 }}</div>
+                        <div class="small text-muted fw-bold" style="font-size: 0.65rem;">VISITS</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="h4 fw-bold mb-0 text-warning">{{ profile.age|default:"—" }}</div>
+                        <div class="small text-muted fw-bold" style="font-size: 0.65rem;">AGE</div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if not profile.pregnancy_period or not profile.edd %}
+        <div class="alert alert-warning border-0 shadow-sm mb-4">
+            <div class="d-flex">
+                <i class="bi bi-info-circle-fill me-2 mt-1"></i>
+                <div>
+                    <h6 class="fw-bold mb-1">Incomplete Profile</h6>
+                    <p class="small mb-2">Update your pregnancy details to generate an accurate care schedule.</p>
+                    <a href="{% url 'accounts:profile_update' %}" class="btn btn-warning btn-sm fw-bold">Update Now</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if profile and profile.assigned_doctor %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="mb-0 fw-bold small text-uppercase text-muted"><i class="bi bi-shield-plus me-2 text-primary"></i>Your ANC Care Team</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-warning text-white d-flex align-items-center justify-content-center fw-bold" style="width: 45px; height: 45px;">
+                        {{ profile.assigned_doctor.last_name|first|upper }}
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark">Dr. {{ profile.assigned_doctor.get_full_name }}</div>
+                        <div class="small text-muted">Lead Obstetrician</div>
+                    </div>
+                </div>
+                <a href="{% url 'messaging:conversation' profile.assigned_doctor.id %}" class="btn btn-dark w-100 mt-3 fw-bold btn-sm py-2" style="border-radius: 0;">
+                    <i class="bi bi-chat-left-dots me-2"></i>MESSAGE CLINIC
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card border-0 shadow-sm bg-danger text-white">
+            <div class="card-body py-4">
+                <h6 class="fw-bold text-uppercase mb-3" style="letter-spacing: 1px;">
+                    <i class="bi bi-exclamation-octagon-fill me-2"></i>Emergency Help
+                </h6>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="small">Ambulance</span>
+                    <span class="fw-bold">0800 123 456</span>
+                </div>
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="small">Maternity Ward</span>
+                    <span class="fw-bold">+256 700 000 000</span>
+                </div>
+                <p class="small mb-0 opacity-75 fst-italic border-top border-white border-opacity-25 pt-2" style="font-size: 0.75rem;">
+                    Seek immediate care for bleeding, severe pain, or blurred vision.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm mb-4 overflow-hidden">
+            <div class="card-body py-5 text-center position-relative">
+                <div class="position-absolute top-0 end-0 p-3 opacity-10">
+                    <i class="bi bi-hourglass-split" style="font-size: 5rem;"></i>
+                </div>
+                
+                <h6 class="text-uppercase fw-bold text-muted mb-4" style="letter-spacing: 2px;">Next Clinical Checkup</h6>
+                
+                {% if next_visit %}
+                    {% if next_visit.scheduled_date < today and not next_visit.is_completed %}
+                        <div class="display-5 fw-bold text-danger mb-2">VISIT OVERDUE</div>
+                        <p class="text-muted fw-bold">Scheduled for: {{ next_visit.scheduled_date|date:"d M, Y" }}</p>
+                        <a href="tel:+256700000000" class="btn btn-danger btn-lg px-5 fw-bold mt-2" style="border-radius:0;">CALL TO RESCHEDULE</a>
+                    {% else %}
+                        <div id="countdown" class="display-4 fw-bold text-dark mb-3" 
+                             data-date="{{ next_visit.scheduled_date|date:'Y-m-d' }}T09:00:00">—</div>
+                        <div class="badge bg-success-subtle text-success px-4 py-2 border border-success border-opacity-25" style="border-radius:0;">
+                            <i class="bi bi-calendar-event me-2"></i>Visit {{ next_visit.visit_number }} on {{ next_visit.scheduled_date|date:"D, d M Y" }}
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="py-3">
+                        <i class="bi bi-check-circle text-success display-6 mb-3"></i>
+                        <p class="text-muted fw-bold mb-0">No pending appointments found.</p>
+                        <a href="{% url 'slots:book_appointment' %}" class="btn btn-primary mt-3 px-4">Book New Appointment</a>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="card-footer bg-light border-0 py-3 text-center">
+                <small class="text-muted">Expected Delivery Date (EDD): <strong>{{ profile.edd|date:"d M Y"|default:"Not Set" }}</strong></small>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-layout-text-sidebar-reverse me-2 text-warning"></i>ANC Care Schedule</h6>
+                <span class="small opacity-75">WHO 8-Contact Model</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr style="font-size: 0.75rem;" class="text-uppercase text-muted">
+                            <th class="ps-4">Contact</th>
+                            <th>Status</th>
+                            <th class="text-end pe-4">Date scheduled</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="table-success table-opacity-10">
+                            <td class="ps-4">
+                                <div class="fw-bold text-dark">Contact 1: Initial Registration</div>
+                                <div class="small text-muted">Baseline assessment & labs</div>
+                            </td>
+                            <td><span class="badge bg-success" style="border-radius:0;"><i class="bi bi-check-lg me-1"></i>COMPLETED</span></td>
+                            <td class="text-end pe-4 small fw-bold">{{ user.date_joined|date:"d M Y" }}</td>
+                        </tr>
+
+                        {% for visit in visits %}
+                            {% if visit.visit_number > 1 %}
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="fw-bold text-dark">Contact {{ visit.visit_number }}: Follow-up</div>
+                                    <div class="small text-muted">Session {{ visit.visit_number }} of 8</div>
+                                </td>
+                                <td>
+                                    {% if visit.is_completed %}
+                                        <span class="badge bg-success" style="border-radius:0;">COMPLETED</span>
+                                    {% elif visit.status == 'MISSED' %}
+                                        <span class="badge bg-danger" style="border-radius:0;">MISSED</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary" style="border-radius:0;">UPCOMING</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end pe-4 small fw-bold {% if not visit.is_completed and visit.scheduled_date < today %}text-danger{% endif %}">
+                                    {{ visit.scheduled_date|date:"D, d M Y" }}
+                                </td>
+                            </tr>
+                            {% endif %}
+                        {% empty %}
+                            <tr><td colspan="3" class="text-center py-4 text-muted">Your schedule is being prepared by clinical staff.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include 'chatbot/chat_widget.html' %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const el = document.getElementById('countdown');
+    if (!el) return;
+    const target = new Date(el.dataset.date).getTime();
+    function update() {
+        const diff = target - Date.now();
+        if (diff < 0) { el.innerHTML = '<span class="text-success">TODAY IS VISIT DAY</span>'; return; }
+        const d = Math.floor(diff / 86400000);
+        const h = Math.floor((diff % 86400000) / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+        el.innerHTML = `${d}d <span class="text-muted mx-1">:</span> ${String(h).padStart(2,'0')}h <span class="text-muted mx-1">:</span> ${String(m).padStart(2,'0')}m <span class="text-muted mx-1">:</span> <small style="font-size:1.5rem">${String(s).padStart(2,'0')}s</small>`;
+    }
+    update(); setInterval(update, 1000);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% block title %}Book Appointment - KRRH{% endblock %}
+
+{% block panel_title %}Book a Visit{% endblock %}
+
+{% block extra_head %}
+<style>
+    :root {
+        --primary-navy: #1a2c3f;
+        --accent-orange: #e67e22;
+    }
+
+    /* Consistent styling for the booking card headers */
+    .card-header-navy { background: var(--primary-navy) !important; color: white; border-radius: 0; }
+    .card-header-orange { background: var(--accent-orange) !important; color: white; border-radius: 0; }
+    
+    .table-krrh thead { background-color: var(--primary-navy); color: white; }
+    
+    .btn-orange { 
+        background-color: var(--accent-orange); 
+        color: white; 
+        border: none; 
+        transition: 0.3s;
+    }
+    .btn-orange:hover { background-color: #d35400; color: white; }
+    
+    .slot-btn {
+        transition: all 0.2s ease;
+        border-radius: 0 !important;
+        font-size: 0.85rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <div class="section-header">
+            <h2 class="fw-bold" style="color: var(--primary-navy);">Schedule Maternal Consultation</h2>
+            <p class="text-muted">Choose your preferred doctor and an available time slot below.</p>
+        </div>
+    </div>
+</div>
+
+{% if existing_appointments %}
+<div class="card shadow-sm mb-5 border-0">
+    <div class="card-header py-2 card-header-navy">
+        <h6 class="mb-0 fw-bold small"><i class="bi bi-calendar-check me-2"></i>Recent Appointments</h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 small">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-4">Doctor</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th class="pe-4">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in existing_appointments %}
+                <tr>
+                    <td class="ps-4 fw-bold">Dr. {{ a.doctor.get_full_name|default:a.doctor.username }}</td>
+                    <td>{{ a.date|date:"d M Y" }}</td>
+                    <td>{{ a.hour_display }}</td>
+                    <td class="pe-4">
+                        {% if a.status == 'APPROVED' %}<span class="badge bg-success">Approved</span>
+                        {% elif a.status == 'PENDING' %}<span class="badge bg-warning text-dark">Pending</span>
+                        {% elif a.status == 'REJECTED' %}<span class="badge bg-danger">Rejected</span>
+                        {% else %}<span class="badge bg-secondary">{{ a.status }}</span>{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<div class="card shadow-sm border-0">
+    <div class="card-header py-3 card-header-orange">
+        <h6 class="mb-0 fw-bold"><i class="bi bi-calendar-plus me-2"></i>New Appointment Request</h6>
+    </div>
+    <div class="card-body p-4">
+        <form method="post" id="bookingForm">
+            {% csrf_token %}
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold small text-uppercase" style="color:var(--primary-navy);">Select Doctor *</label>
+                    <select name="doctor_id" id="doctorSelect" class="form-select" required onchange="updateSlots()">
+                        <option value="">-- Choose a Doctor --</option>
+                        {% for doc in doctors %}
+                        <option value="{{ doc.id }}">Dr. {{ doc.display_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold small text-uppercase" style="color:var(--primary-navy);">Appointment Date *</label>
+                    <input type="date" name="date" id="dateInput" class="form-control" required
+                           min="{{ today|date:'Y-m-d' }}" onchange="updateSlots()">
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-bold small text-uppercase" style="color:var(--primary-navy);">Available Time Slots *</label>
+                    <div id="slotsGrid" class="d-flex flex-wrap gap-2 pt-2">
+                        <p class="text-muted small fst-italic">Select both a doctor and date to view current availability.</p>
+                    </div>
+                    <input type="hidden" name="hour" id="selectedHour">
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-bold small text-uppercase" style="color:var(--primary-navy);">Reason for Visit</label>
+                    <textarea name="reason" class="form-control" rows="3"
+                              placeholder="Describe your current status or specific concerns..."></textarea>
+                </div>
+            </div>
+            <div class="mt-4 border-top pt-4">
+                <button type="submit" class="btn btn-orange fw-bold px-4 py-2">
+                    <i class="bi bi-send-check me-2"></i>Confirm Booking
+                </button>
+                <a href="{% url 'accounts:patient_dashboard' %}" class="btn btn-link text-muted ms-2">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateSlots() {
+    const doctorId = document.getElementById('doctorSelect').value;
+    const date = document.getElementById('dateInput').value;
+    const grid = document.getElementById('slotsGrid');
+    document.getElementById('selectedHour').value = '';
+
+    if (!doctorId || !date) {
+        grid.innerHTML = '<p class="text-muted small fst-italic">Select both a doctor and date to view current availability.</p>';
+        return;
+    }
+
+    grid.innerHTML = '<div class="spinner-border spinner-border-sm text-warning" role="status"></div>';
+
+    // Ensure the namespace here matches your slots/urls.py (usually slots:available-slots)
+    fetch(`/slots/available-slots/?doctor_id=${doctorId}&date=${date}`)
+        .then(r => r.json())
+        .then(data => {
+            grid.innerHTML = '';
+            if (!data.slots || data.slots.length === 0) {
+                grid.innerHTML = '<p class="text-danger small fw-bold">No slots available for the selected date.</p>';
+                return;
+            }
+            data.slots.forEach(slot => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn slot-btn px-3 py-2 fw-bold';
+                
+                if (slot.available) {
+                    btn.style.border = '1px solid var(--accent-orange)';
+                    btn.style.background = '#fff';
+                    btn.style.color = 'var(--accent-orange)';
+                    btn.textContent = slot.label;
+                    btn.onclick = function() {
+                        document.querySelectorAll('#slotsGrid button').forEach(b => {
+                            if (!b.disabled) {
+                                b.style.background = '#fff';
+                                b.style.color = 'var(--accent-orange)';
+                            }
+                        });
+                        btn.style.background = 'var(--accent-orange)';
+                        btn.style.color = '#fff';
+                        document.getElementById('selectedHour').value = slot.hour;
+                    };
+                } else {
+                    btn.className += ' btn-light text-muted';
+                    btn.style.border = '1px solid #dee2e6';
+                    btn.textContent = slot.label + ' (Full)';
+                    btn.disabled = true;
+                }
+                grid.appendChild(btn);
+            });
+        })
+        .catch(() => {
+            grid.innerHTML = '<p class="text-danger small">Network error: Failed to load slots.</p>';
+        });
+}
+
+document.getElementById('bookingForm').onsubmit = function(e) {
+    if (!document.getElementById('selectedHour').value) {
+        e.preventDefault();
+        alert('Please select a specific time slot before submitting.');
+    }
+};
+</script>
+{% endblock %}

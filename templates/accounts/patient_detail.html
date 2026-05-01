@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% block title %}{{ patient.user.get_full_name }} - KRRH{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'accounts:patient_list' %}" style="color:var(--green-main);">Patient Registry</a></li>
+        <li class="breadcrumb-item active">{{ patient.user.get_full_name }}</li>
+    </ol>
+</nav>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card shadow-sm mb-3" style="border-top:4px solid {% if patient.email_alerts_active %}var(--green-main){% else %}var(--gray-600){% endif %};">
+            <div class="card-body text-center py-3">
+                <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+                    {% if patient.email_alerts_active %}<span class="pulse-dot"></span>{% endif %}
+                    <span class="fw-800" style="color:{% if patient.email_alerts_active %}var(--green-dark){% else %}var(--gray-600){% endif %};">
+                        Alerts: {% if patient.email_alerts_active %}ACTIVE (Every 2 min){% else %}STOPPED{% endif %}
+                    </span>
+                </div>
+                {% if user.role == 'ADMIN' or user.is_superuser %}
+                <form action="{% url 'accounts:toggle_alerts' patient.id %}" method="POST">
+                    {% csrf_token %}
+                    <button class="btn btn-sm w-100 fw-700 {% if patient.email_alerts_active %}btn-outline-danger{% else %}btn-green{% endif %}" style="border-radius:8px;">
+                        <i class="bi bi-{% if patient.email_alerts_active %}stop-circle{% else %}play-circle{% endif %} me-1"></i>
+                        {% if patient.email_alerts_active %}Stop SMS & Email{% else %}Start SMS & Email{% endif %}
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-3" style="border-top:4px solid var(--orange-main);">
+            <div class="card-header py-3" style="background:var(--green-dark);">
+                <h6 class="mb-0 text-white fw-700"><i class="bi bi-person-heart me-1"></i>Mother's Profile</h6>
+            </div>
+            <div class="card-body">
+                <h4 class="fw-900 mb-0" style="color:var(--green-dark);">{{ patient.user.get_full_name }}</h4>
+                <p class="text-muted small mb-3"><i class="bi bi-telephone me-1"></i>{{ patient.user.phone_number }}</p>
+                <div class="row g-2 text-center mb-3">
+                    <div class="col-4">
+                        <div class="fw-900" style="color:var(--green-main);font-size:1.3rem;">{{ patient.pregnancy_period }}</div>
+                        <div class="text-muted" style="font-size:.7rem;font-weight:700;">WEEKS</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="fw-900" style="color:var(--orange-main);font-size:1.3rem;">{{ patient.age|default:"—" }}</div>
+                        <div class="text-muted" style="font-size:.7rem;font-weight:700;">AGE</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="fw-900" style="color:var(--green-dark);font-size:1.1rem;">{{ patient.edd|date:"d M" }}</div>
+                        <div class="text-muted" style="font-size:.7rem;font-weight:700;">EDD</div>
+                    </div>
+                </div>
+                <hr class="my-2">
+                <div class="small mb-1 text-muted fw-700 text-uppercase">Address</div>
+                <p class="small mb-0">{{ patient.address|default:"Not provided" }}</p>
+            </div>
+            <div class="card-footer bg-light border-0 d-flex gap-2">
+                <button class="btn btn-outline-secondary btn-sm flex-fill" onclick="window.print()">
+                    <i class="bi bi-printer me-1"></i>Print
+                </button>
+                
+                {# FIXED: Syntax corrected for 'conversation' URL #}
+                {% if patient.user.id %}
+                <a href="{% url 'accounts:conversation' patient.user.id %}" class="btn btn-green btn-sm flex-fill">
+                    <i class="bi bi-chat-dots me-1"></i>Message
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center" style="background:var(--green-dark);">
+                <h6 class="mb-0 text-white fw-700"><i class="bi bi-list-check me-2"></i>ANC Visit Schedule</h6>
+                <span class="badge" style="background:var(--orange-main);font-size:.72rem;">WHO 8-Contact Model</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-krrh mb-0">
+                    <thead>
+                        <tr><th>Visit</th><th>Date</th><th>Notes / Status</th><th class="text-end">Action</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for visit in visits %}
+                        <tr {% if visit.status == 'MISSED' %}style="background:#fff5f5;"{% endif %}>
+                            <td>
+                                <span class="fw-700">Contact {{ visit.visit_number }}</span>
+                                {% if visit.visit_number == 1 %}
+                                    <span class="badge badge-green ms-1" style="font-size:.65rem;">Registration</span>
+                                {% endif %}
+                            </td>
+                            <td class="small {% if not visit.is_completed and visit.scheduled_date < today %}text-danger fw-700{% endif %}">
+                                {{ visit.scheduled_date|date:"D, d M Y" }}
+                            </td>
+                            <td>
+                                {% if visit.is_completed %}
+                                    <div class="p-2 rounded small" style="background:var(--green-pale);border-left:4px solid var(--green-main);">
+                                        <span class="fw-700 text-uppercase d-block" style="color:var(--green-dark);font-size:.7rem;">Attended</span>
+                                        {{ visit.clinical_notes|default:"No notes." }}
+                                    </div>
+                                {% elif visit.status == 'MISSED' %}
+                                    <div class="p-2 rounded small" style="background:#fdecea;border-left:4px solid #c0392b;">
+                                        <span class="fw-700 text-uppercase d-block" style="color:#c0392b;font-size:.7rem;">Missed</span>
+                                        Mother did not attend. Alert logged.
+                                    </div>
+                                {% else %}
+                                    <textarea name="notes" form="form-attend-{{ visit.id }}"
+                                              class="form-control form-control-sm" rows="1"
+                                              placeholder="BP, Weight, FHR..."></textarea>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if visit.is_completed or visit.status == 'MISSED' %}
+                                    <form action="{% url 'accounts:complete_visit' visit.id %}" method="POST">
+                                        {% csrf_token %}
+                                        <button class="btn btn-sm btn-outline-secondary">Undo</button>
+                                    </form>
+                                {% else %}
+                                    <div class="d-flex gap-1 justify-content-end">
+                                        <form id="form-attend-{{ visit.id }}" action="{% url 'accounts:complete_visit' visit.id %}" method="POST">
+                                            {% csrf_token %}
+                                            <button class="btn btn-sm btn-green">
+                                                <i class="bi bi-check2"></i> Attend
+                                            </button>
+                                        </form>
+                                    </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="text-center py-4 text-muted">No visits generated yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center" style="background:var(--orange-dark);">
+                <h6 class="mb-0 text-white fw-700"><i class="bi bi-phone me-2"></i>SMS Alert History</h6>
+                <span class="badge" style="background:rgba(255,255,255,.2);font-size:.72rem;">{{ patient.sms_logs.count }} records</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-krrh mb-0">
+                    <thead>
+                        <tr><th>Sent At</th><th>Status</th><th>Response</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for log in patient.sms_logs.all|slice:":10" %}
+                        <tr>
+                            <td class="small">{{ log.sent_at|date:"d M, H:i:s" }}</td>
+                            <td>
+                                {% if log.status == "Success" %}
+                                    <span class="badge bg-success">SENT</span>
+                                {% elif log.status == "Failed" %}
+                                    <span class="badge bg-danger">FAILED</span>
+                                {% else %}
+                                    <span class="badge bg-info">{{ log.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="small text-muted">{{ log.response_body|truncatechars:60 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="text-center py-3 text-muted">No SMS logs yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

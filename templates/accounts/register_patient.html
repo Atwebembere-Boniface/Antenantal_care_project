@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+{% block title %}Register Mother - KRRH{% endblock %}
+
+{% block panel_title %}Register Pregnant Woman{% endblock %}
+
+{% block extra_head %}
+<style>
+    :root {
+        --primary-navy: #1a2c3f;
+        --accent-orange: #e67e22;
+    }
+
+    .card-header-navy {
+        background-color: var(--primary-navy);
+        color: white;
+        border-radius: 0 !important;
+    }
+
+    .form-label-navy {
+        color: var(--primary-navy);
+        font-weight: 700;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .btn-brand-solid {
+        background-color: var(--accent-orange);
+        color: white;
+        border: none;
+        border-radius: 0;
+        font-weight: 700;
+        transition: 0.3s;
+    }
+
+    .btn-brand-solid:hover {
+        background-color: #d35400;
+        color: white;
+    }
+
+    .btn-brand-outline {
+        border: 1px solid var(--primary-navy);
+        color: var(--primary-navy);
+        border-radius: 0;
+        font-weight: 600;
+        transition: 0.3s;
+    }
+    
+    .btn-brand-outline:hover {
+        background-color: var(--primary-navy);
+        color: white;
+    }
+
+    .alert-orange {
+        background-color: #fff5eb;
+        border-left: 4px solid var(--accent-orange);
+        color: #856404;
+    }
+
+    .form-control, .form-select {
+        border-radius: 0;
+        border: 1px solid #ced4da;
+        padding: 0.75rem;
+    }
+
+    .form-control:focus {
+        border-color: var(--accent-orange);
+        box-shadow: 0 0 0 0.25rem rgba(230, 126, 34, 0.25);
+    }
+    
+    .invalid-feedback {
+        font-weight: 600;
+        font-size: 0.75rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-4">
+    <div class="col-lg-8">
+        <div class="section-header mb-4">
+            <h2 class="fw-bold" style="color: var(--primary-navy);">Mother Registration Intake</h2>
+            <p class="text-muted">Registering a new patient automatically schedules 8 WHO-standard ANC visits and activates reminder protocols.</p>
+        </div>
+
+        <div class="card shadow-sm border-0" style="border-radius: 0;">
+            <div class="card-header card-header-navy py-3">
+                <h6 class="mb-0 fw-bold">
+                    <i class="bi bi-person-plus-fill me-2 text-warning"></i>PATIENT BIOMETRICS & CONTACT
+                </h6>
+            </div>
+            <div class="card-body p-4 p-md-5">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    {% if form.errors and not form.non_field_errors %}
+                    <div class="alert alert-danger mb-4 py-2 small">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i> Please correct the errors highlighted below.
+                    </div>
+                    {% endif %}
+
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="form-label form-label-navy">Full Name *</label>
+                            <input type="text" name="full_name" 
+                                   class="form-control {% if form.full_name.errors %}is-invalid{% endif %}"
+                                   placeholder="First and Last Name" 
+                                   value="{{ form.full_name.value|default:'' }}" required>
+                            {% for error in form.full_name.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label form-label-navy">Phone Number *</label>
+                            <input type="text" name="phone_number" 
+                                   class="form-control {% if form.phone_number.errors %}is-invalid{% endif %}"
+                                   placeholder="07XXXXXXXX" 
+                                   value="{{ form.phone_number.value|default:'' }}" required>
+                            <div class="form-text small opacity-75">This number serves as the patient's login ID.</div>
+                            {% for error in form.phone_number.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="col-md-8">
+                            <label class="form-label form-label-navy">Email Address</label>
+                            <input type="email" name="email" 
+                                   class="form-control {% if form.email.errors %}is-invalid{% endif %}"
+                                   placeholder="patient@email.com" 
+                                   value="{{ form.email.value|default:'' }}">
+                            {% for error in form.email.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label form-label-navy">Age</label>
+                            <input type="number" name="age" 
+                                   class="form-control {% if form.age.errors %}is-invalid{% endif %}" 
+                                   placeholder="Years"
+                                   value="{{ form.age.value|default:'' }}" min="12" max="60">
+                            {% for error in form.age.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label form-label-navy">Current Pregnancy Gestation (Weeks) *</label>
+                            <input type="number" name="pregnancy_period" 
+                                   class="form-control {% if form.pregnancy_period.errors %}is-invalid{% endif %}"
+                                   placeholder="Enter number of weeks" 
+                                   value="{{ form.pregnancy_period.value|default:'' }}" 
+                                   min="1" max="42" required>
+                            {% for error in form.pregnancy_period.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label form-label-navy">Residential Address *</label>
+                            <textarea name="address" 
+                                      class="form-control {% if form.address.errors %}is-invalid{% endif %}"
+                                      rows="3" 
+                                      placeholder="Village, Parish, or Sub-county" 
+                                      required>{{ form.address.value|default:'' }}</textarea>
+                            {% for error in form.address.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger mt-4 small py-2">
+                        {% for error in form.non_field_errors %}
+                            <i class="bi bi-exclamation-circle me-2"></i>{{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="alert alert-orange mt-4 py-3 small shadow-sm">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-robot fs-4 me-3" style="color:var(--accent-orange);"></i>
+                            <div>
+                                <strong class="text-dark">Automation Triggered:</strong><br>
+                                Upon submission, Visit 1 is logged. The system will auto-calculate the EDD and queue SMS/Email alerts immediately.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-3 mt-4">
+                        <button type="submit" class="btn btn-brand-solid flex-fill py-3">
+                            <i class="bi bi-check-circle-fill me-2"></i>COMPLETE REGISTRATION
+                        </button>
+                        <a href="{% url 'accounts:patient_list' %}" class="btn btn-brand-outline py-3 px-4 d-flex align-items-center">
+                            CANCEL
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

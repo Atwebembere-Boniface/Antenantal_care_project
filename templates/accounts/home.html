@@ -1,0 +1,163 @@
+<!-- {% extends 'base.html' %}
+{% block title %}Welcome - KRRH ANC Portal{% endblock %}
+
+{% block panel_title %}Welcome to the Antenatal Care Checkup System{% endblock %}
+
+{% block extra_head %}
+<style>
+    :root {
+        --green-dark: #1e3a34;
+        --green-main: #27ae60;
+        --green-light: #eafaf1;
+        --orange-main: #e67e22;
+        --orange-light: #fef5e7;
+    }
+    .fw-900 { font-weight: 900; }
+    .fw-800 { font-weight: 800; }
+    .fw-700 { font-weight: 700; }
+    .badge-orange { background-color: var(--orange-main); color: white; }
+    .btn-green { background-color: var(--green-main); color: white; border: none; }
+    .btn-green:hover { background-color: #219150; color: white; }
+    .btn-outline-green { border: 2px solid var(--green-main); color: var(--green-main); }
+    .btn-outline-green:hover { background-color: var(--green-main); color: white; }
+    .btn-orange { background-color: var(--orange-main); color: white; border: none; }
+    .btn-orange:hover { background-color: #d35400; color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row align-items-center py-5 mb-4">
+    <div class="col-lg-7">
+        <span class="badge badge-orange mb-3" style="font-size:.8rem;padding:7px 14px;">
+            <i class="bi bi-shield-heart me-1"></i> WHO 8-Contact ANC Model
+        </span>
+        <h1 class="fw-900 mb-3" style="font-size:2.6rem; color: var(--green-dark); line-height:1.2;">
+            Protecting Every Mother<br><span style="color:var(--orange-main);">at Kabale RRH</span>
+        </h1>
+        <p class="lead text-muted mb-4">
+            Our integrated system ensures every pregnant mother receives timely care,
+            automated SMS & email reminders, and personalised doctor support.
+        </p>
+        
+        {% if not user.is_authenticated %}
+        <div class="d-flex gap-3 flex-wrap">
+            <a href="{% url 'accounts:login' %}" class="btn btn-green btn-lg px-4 shadow-sm">
+                <i class="bi bi-box-arrow-in-right me-2"></i>Access Portal
+            </a>
+            <a href="#info" class="btn btn-outline-green btn-lg px-4">
+                <i class="bi bi-info-circle me-2"></i>Learn More
+            </a>
+        </div>
+        {% else %}
+        <div class="d-flex gap-3 flex-wrap">
+            {% if user.role == 'PATIENT' %}
+                <a href="{% url 'accounts:patient_dashboard' %}" class="btn btn-green btn-lg px-4 shadow-sm">
+                    <i class="bi bi-heart-pulse me-2"></i>My Dashboard
+                </a>
+                <a href="{% url 'slots:book_appointment' %}" class="btn btn-orange btn-lg px-4">
+                    <i class="bi bi-calendar-plus me-2"></i>Book Appointment
+                </a>
+            {% elif user.role == 'DOCTOR' or user.role == 'NURSE' %}
+                <a href="{% url 'accounts:staff_dashboard' %}" class="btn btn-green btn-lg px-4">
+                    <i class="bi bi-speedometer2 me-2"></i>My Dashboard
+                </a>
+            {% else %}
+                <a href="{% url 'accounts:admin_dashboard' %}" class="btn btn-green btn-lg px-4">
+                    <i class="bi bi-speedometer2 me-2"></i>Admin Dashboard
+                </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-lg-5 d-none d-lg-block text-center">
+        <div style="background:linear-gradient(135deg, var(--green-light), var(--orange-light)); border-radius:24px; padding:40px 30px; border: 1px solid rgba(0,0,0,0.05);">
+            <i class="bi bi-heart-pulse-fill" style="font-size:6rem; color:var(--green-main);"></i>
+            <div class="mt-3">
+                <div class="d-flex justify-content-center gap-4 text-center">
+                    <div>
+                        <div class="fw-900" style="font-size:1.8rem; color:var(--green-dark);">8</div>
+                        <div class="small text-muted fw-700">Contacts</div>
+                    </div>
+                    <div>
+                        <div class="fw-900" style="font-size:1.8rem; color:var(--orange-main);">24/7</div>
+                        <div class="small text-muted fw-700">Alerts</div>
+                    </div>
+                    <div>
+                        <div class="fw-900" style="font-size:1.8rem; color:var(--green-dark);">SMS</div>
+                        <div class="small text-muted fw-700">+ Email</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="info" class="row g-4 mb-5">
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm" style="border-top: 4px solid #c0392b;">
+            <div class="card-body p-4">
+                <h5 class="fw-bold mb-3" style="color:#c0392b;">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Risks of Missing ANC
+                </h5>
+                <ul class="list-unstyled mb-0">
+                    {% for risk in risks %}
+                    <li class="d-flex align-items-start mb-2">
+                        <i class="bi bi-x-circle-fill me-2 mt-1" style="color:#c0392b; flex-shrink:0;"></i>
+                        <span class="text-dark">{{ risk }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm" style="border-top: 4px solid var(--green-main);">
+            <div class="card-body p-4">
+                <h5 class="fw-bold mb-3" style="color:var(--green-dark);">
+                    <i class="bi bi-check-circle-fill me-2"></i>Benefits of Attending
+                </h5>
+                <ul class="list-unstyled mb-0">
+                    {% for benefit in benefits %}
+                    <li class="d-flex align-items-start mb-2">
+                        <i class="bi bi-check-circle-fill me-2 mt-1" style="color:var(--green-main); flex-shrink:0;"></i>
+                        <span class="text-dark">{{ benefit }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 pb-4">
+    <div class="col-md-3">
+        <div class="card h-100 text-center p-3 shadow-sm border-0" style="background: white;">
+            <div class="mb-2" style="font-size:2rem; color:var(--green-main);"><i class="bi bi-calendar2-check"></i></div>
+            <h6 class="fw-800 text-dark">Smart Scheduling</h6>
+            <p class="small text-muted mb-0">Book appointments with available doctors in real time</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100 text-center p-3 shadow-sm border-0" style="background: white;">
+            <div class="mb-2" style="font-size:2rem; color:var(--orange-main);"><i class="bi bi-phone-vibrate"></i></div>
+            <h6 class="fw-800 text-dark">SMS Reminders</h6>
+            <p class="small text-muted mb-0">Real-time SMS via Pahappa API to your registered number</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100 text-center p-3 shadow-sm border-0" style="background: white;">
+            <div class="mb-2" style="font-size:2rem; color:var(--green-main);"><i class="bi bi-envelope-heart"></i></div>
+            <h6 class="fw-800 text-dark">Email Alerts</h6>
+            <p class="small text-muted mb-0">Countdown emails to your next checkup and EDD</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100 text-center p-3 shadow-sm border-0" style="background: white;">
+            <div class="mb-2" style="font-size:2rem; color:var(--orange-main);"><i class="bi bi-chat-heart"></i></div>
+            <h6 class="fw-800 text-dark">Secure Messaging</h6>
+            <p class="small text-muted mb-0">Chat directly with your assigned doctor anytime</p>
+        </div>
+    </div>
+</div>
+{% endblock %} -->

@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% block title %}My Appointments - KRRH{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --sidebar-navy: #1a2d42;
+        --green-dark: #16a085;
+        --green-pale: #e8f6f3;
+        --green-mid: #a3e4d7;
+        --orange-main: #e67e22;
+        --orange-light: #fef5e7;
+        --orange-mid: #fad7a0;
+    }
+    .btn-outline-navy {
+        border: 2px solid var(--sidebar-navy);
+        color: var(--sidebar-navy);
+        font-weight: 700;
+        border-radius: 4px;
+    }
+    .btn-outline-navy:hover {
+        background: var(--sidebar-navy);
+        color: white;
+    }
+    .card-header-navy {
+        background-color: var(--sidebar-navy) !important;
+        color: #ffffff !important;
+    }
+</style>
+
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <div class="section-header">
+            <h2 class="fw-bold" style="color: var(--sidebar-navy);">Today's Appointment Queue</h2>
+            <p class="text-muted">{% now "D, d F Y" %} &mdash; Max 2 patients per hour, 9am–5pm</p>
+        </div>
+    </div>
+    <div class="col-auto">
+        <a href="{% url 'accounts:staff_dashboard' %}" class="btn btn-outline-navy">
+            <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+        </a>
+    </div>
+</div>
+
+{% if pending_approvals %}
+<div class="card shadow-sm mb-4" style="border-left:5px solid var(--orange-main); border-radius: 8px; overflow: hidden;">
+    <div class="card-header py-3" style="background: var(--orange-main); border: none;">
+        <h6 class="mb-0 text-white fw-bold">
+            <i class="bi bi-hourglass-split me-2"></i>Pending Approval ({{ pending_approvals.count }})
+        </h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr class="small text-uppercase fw-bold text-muted">
+                    <th class="ps-4">Patient</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Reason</th>
+                    <th class="text-end pe-4">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in pending_approvals %}
+                <tr>
+                    <td class="ps-4">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="avatar-circle d-flex align-items-center justify-content-center bg-secondary text-white fw-bold" 
+                                 style="width:35px; height:35px; border-radius: 4px; font-size: .8rem;">
+                                {{ a.patient.user.first_name|first }}{{ a.patient.user.last_name|first }}
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark">{{ a.patient.user.get_full_name }}</div>
+                                <div class="text-muted small">{{ a.patient.user.phone_number }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="small fw-semibold">{{ a.date|date:"d M Y" }}</td>
+                    <td><span class="badge bg-warning text-dark">{{ a.hour_display }}</span></td>
+                    <td class="small text-muted">{{ a.reason|default:"Routine Checkup"|truncatechars:40 }}</td>
+                    <td class="text-end pe-4">
+                        <div class="d-flex gap-2 justify-content-end">
+                            <form action="{% url 'slots:manage_appointment' a.pk 'approve' %}" method="POST">
+                                {% csrf_token %}
+                                <button class="btn btn-success btn-sm fw-bold">APPROVE</button>
+                            </form>
+                            <form action="{% url 'slots:manage_appointment' a.pk 'reject' %}" method="POST">
+                                {% csrf_token %}
+                                <button class="btn btn-outline-danger btn-sm"><i class="bi bi-x-lg"></i></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<div class="card border-0 shadow-sm" style="border-radius: 8px; overflow: hidden;">
+    <div class="card-header card-header-navy py-3 border-0">
+        <h6 class="mb-0 fw-bold"><i class="bi bi-clock me-2 text-warning"></i>Hourly Schedule &mdash; {{ today|date:"d M Y" }}</h6>
+    </div>
+    <div class="card-body p-4 bg-light bg-opacity-50">
+        <div class="row g-3">
+            {% for slot in hourly_schedule %}
+            <div class="col-sm-6 col-lg-4">
+                <div class="p-3 rounded h-100 shadow-sm"
+                     style="background:{% if slot.is_full %}#fdecea{% elif slot.count == 1 %}var(--orange-light){% else %}#ffffff{% endif %};
+                            border: 1px solid {% if slot.is_full %}#e74c3c{% elif slot.count == 1 %}var(--orange-mid){% else %}#dee2e6{% endif %};">
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="fw-bold text-uppercase small" style="color: var(--sidebar-navy);">{{ slot.label }}</span>
+                        <span class="badge {% if slot.is_full %}bg-danger{% elif slot.count == 1 %}bg-warning text-dark{% else %}bg-dark{% endif %}">
+                            {{ slot.count }} / 2
+                        </span>
+                    </div>
+
+                    {% if slot.appointments %}
+                        {% for a in slot.appointments %}
+                        <div class="p-2 mb-2 rounded border bg-white">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="avatar-circle d-flex align-items-center justify-content-center bg-primary text-white" style="width:28px; height:28px; border-radius:4px; font-size:0.7rem;">
+                                    {{ a.patient.user.first_name|first }}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold text-dark small">{{ a.patient.user.get_full_name }}</div>
+                                    <div class="small text-uppercase" style="font-size:0.6rem; color: var(--green-dark);">{{ a.status }}</div>
+                                </div>
+                                {% if a.status == 'APPROVED' %}
+                                <form action="{% url 'slots:manage_appointment' a.pk 'complete' %}" method="POST">
+                                    {% csrf_token %}
+                                    <button class="btn btn-sm btn-success py-0 px-2" style="font-size: 0.65rem;">DONE</button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-2"><span class="text-muted small italic">No bookings</span></div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

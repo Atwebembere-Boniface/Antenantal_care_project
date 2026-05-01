@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% block title %}Staff Directory - KRRH{% endblock %}
+
+{% block panel_title %}Manage Staff{% endblock %}
+
+{% block extra_head %}
+<style>
+    :root {
+        --primary-navy: #1a2c3f;
+        --accent-orange: #e67e22;
+    }
+
+    /* Table Customization */
+    .table-krrh thead {
+        background-color: var(--primary-navy);
+        color: white;
+    }
+    
+    .avatar-circle.orange {
+        background-color: var(--accent-orange);
+        color: white;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0;
+    }
+
+    .btn-brand-outline {
+        border: 1px solid var(--primary-navy);
+        color: var(--primary-navy);
+        font-weight: 600;
+        transition: 0.3s;
+        border-radius: 0;
+    }
+
+    .btn-brand-outline:hover {
+        background-color: var(--primary-navy);
+        color: white;
+    }
+
+    .badge-navy {
+        background-color: var(--primary-navy);
+        color: white;
+        border-radius: 0;
+    }
+
+    .badge-orange {
+        background-color: var(--accent-orange);
+        color: white;
+        border-radius: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="section-header mb-0">
+        <h2 class="fw-bold" style="color: var(--primary-navy);">Medical Staff Directory</h2>
+        <p class="text-muted">Active Doctors and Nurses at Kabale Regional Referral Hospital</p>
+    </div>
+    <a href="{% url 'accounts:admin_dashboard' %}" class="btn btn-brand-outline">
+        <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+    </a>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 table-krrh">
+            <thead>
+                <tr class="text-uppercase small">
+                    <th class="ps-4">Staff Member</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Last Login</th>
+                    <th class="text-center pe-4">Manage</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in staff_members %}
+                <tr>
+                    <td class="ps-4">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="avatar-circle orange" style="width:40px; height:40px; font-size:.85rem;">
+                                {{ s.first_name|first|upper }}{{ s.last_name|first|upper }}
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark">{{ s.get_full_name|default:s.username }}</div>
+                                <div class="text-muted" style="font-size:.75rem;">ID #{{ s.id }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="small text-muted">{{ s.email|default:"—" }}</td>
+                    <td>
+                        {% if s.is_superuser %}
+                            <span class="badge badge-navy">System Admin</span>
+                        {% elif s.role %}
+                            <span class="badge badge-orange">{{ s.get_role_display }}</span>
+                        {% else %}
+                            <span class="badge bg-light text-dark border">Unassigned</span>
+                        {% endif %}
+                    </td>
+                    <td class="small text-muted">{{ s.last_login|date:"d M Y, H:i"|default:"Never" }}</td>
+                    <td class="text-center pe-4">
+                        <a href="/admin/accounts/user/{{ s.id }}/change/" class="btn btn-sm btn-brand-outline" target="_blank">
+                            <i class="bi bi-pencil-square me-1"></i>Edit Profile
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-5 text-muted">
+                        <i class="bi bi-people mb-2" style="font-size:3rem; color: #dee2e6;"></i>
+                        <p class="mt-2 mb-1 fw-bold">No staff registered yet.</p>
+                        <a href="{% url 'accounts:staff_signup' %}" class="btn btn-sm btn-brand-solid" style="background-color: var(--accent-orange); color: white;">Register Staff</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

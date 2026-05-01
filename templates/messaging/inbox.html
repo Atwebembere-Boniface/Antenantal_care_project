@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block title %}Messages - KRRH{% endblock %}
+
+{% block panel_title %}Chat with a Doctor{% endblock %}
+
+{% block extra_head %}
+<style>
+    :root {
+        --primary-navy: #1a2c3f;
+        --accent-orange: #e67e22;
+        --light-bg: #f8f9fa;
+    }
+
+    /* Sidebar and List Styles */
+    .chat-sidebar {
+        border-right: 1px solid #dee2e6;
+        height: 100%;
+    }
+
+    .card-header-navy { background: var(--primary-navy) !important; color: white; border-radius: 0; }
+
+    .list-group-item-action {
+        transition: all 0.2s;
+        border-left: 4px solid transparent;
+    }
+
+    .list-group-item-action:hover {
+        background-color: var(--light-bg);
+        border-left: 4px solid var(--accent-orange);
+    }
+
+    .active-chat {
+        background-color: #e9ecef !important;
+        border-left: 4px solid var(--primary-navy) !important;
+    }
+
+    .avatar-circle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        border-radius: 50%;
+    }
+    .avatar-navy { background-color: var(--primary-navy); }
+    .avatar-orange { background-color: var(--accent-orange); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <div class="section-header">
+            <h2 class="fw-bold" style="color: var(--primary-navy);">Secure Messaging</h2>
+            <p class="text-muted">Direct communication with your assigned medical care team.</p>
+        </div>
+    </div>
+</div>
+
+<div class="row g-0 shadow-sm border bg-white rounded overflow-hidden">
+    <div class="col-md-4 chat-sidebar">
+        <div class="card border-0">
+            <div class="card-header py-3 card-header-navy d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold small text-uppercase">Recent Chats</h6>
+                <i class="bi bi-chat-left-dots small"></i>
+            </div>
+            <div class="list-group list-group-flush" style="max-height: 500px; overflow-y: auto;">
+                {% for c in conversations %}
+                <a href="{% url 'messaging:conversation' c.partner.id %}" 
+                   class="list-group-item list-group-item-action py-3 px-3 {% if active_partner_id == c.partner.id %}active-chat{% endif %}">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar-circle {% if c.partner.role == 'PATIENT' %}avatar-navy{% else %}avatar-orange{% endif %}" 
+                             style="width:42px;height:42px;font-size:.85rem;flex-shrink:0;">
+                            {{ c.partner.display_name|first|upper }}{{ c.partner.display_name|slice:"1:2"|upper }}
+                        </div>
+                        <div class="flex-grow-1 overflow-hidden">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bold small text-dark">
+                                    {% if c.partner.role != 'PATIENT' %}Dr. {% endif %}{{ c.partner.display_name }}
+                                </span>
+                                {% if c.unread %}
+                                    <span class="badge rounded-pill bg-danger" style="font-size: 0.65rem;">{{ c.unread }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="text-muted text-truncate mt-1" style="font-size:.75rem;">
+                                {{ c.last_message.body|default:"No messages yet"|truncatechars:35 }}
+                            </div>
+                        </div>
+                    </div>
+                </a>
+                {% empty %}
+                <div class="p-5 text-center text-muted">
+                    <p class="small">No active conversations.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% if contacts %}
+        <div class="p-3 bg-light border-top">
+            <h6 class="fw-bold small text-muted text-uppercase mb-3">Available Care Providers</h6>
+            <div class="d-flex flex-column gap-2">
+                {% for contact in contacts %}
+                <a href="{% url 'messaging:conversation' contact.id %}" 
+                   class="btn btn-sm btn-outline-secondary text-start d-flex align-items-center gap-2 border-0 bg-white shadow-xs">
+                    <div class="avatar-circle avatar-orange" style="width:24px;height:24px;font-size:.6rem;">
+                        {{ contact.display_name|first|upper }}
+                    </div>
+                    <span class="small fw-bold">Dr. {{ contact.display_name }}</span>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-8 bg-white d-none d-md-flex align-items-center justify-content-center border-start">
+        <div class="text-center p-5">
+            <div class="mb-4">
+                <i class="bi bi-shield-lock-fill" style="font-size:3rem;color: var(--primary-navy); opacity: 0.1;"></i>
+            </div>
+            <h5 class="fw-bold" style="color: var(--primary-navy);">Select a Professional to Chat</h5>
+            <p class="text-muted small px-5">All messages sent through the KRRH portal are encrypted and stored securely within the hospital's electronic health record system.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
