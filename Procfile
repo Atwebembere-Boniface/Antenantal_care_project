@@ -1,1 +1,1 @@
-web: python manage.py migrate && python manage.py collectstatic --noinput && gunicorn Antenantal_project.wsgi
+web: gunicorn Antenantal_project.wsgi
