@@ -5,4 +5,3 @@ dj-database-url
 psycopg2-binary
 requests
 python-dotenv
-xhtml2pdf

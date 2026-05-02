@@ -10,7 +10,7 @@ from .models import Message
 from django.db.models import Count
 from django.http import HttpResponse
 from django.template.loader import get_template
-from xhtml2pdf import pisa
+# from xhtml2pdf import pisa
 from django.utils import timezone
 from datetime import date
 from django.views.generic.edit import UpdateView
