@@ -123,8 +123,8 @@ DEFAULT_FROM_EMAIL = os.environ.get(
     "KRRH ANC Portal <kabaleregionalhospital@gmail.com>"
 )
 
-EGOSMS_USERNAME = os.environ.get("EGOSMS_USERNAME", "")
-EGOSMS_PASSWORD = os.environ.get("EGOSMS_PASSWORD", "")
+EGOSMS_USERNAME = os.environ.get("EGOSMS_USERNAME", "atwebembereboniface")
+EGOSMS_PASSWORD = os.environ.get("EGOSMS_PASSWORD", "581246b45070913ff5107657076c1427c3fed25c946eadd2")
 EGOSMS_SENDER_ID = os.environ.get("EGOSMS_SENDER_ID", "UG-SMS")
 EGOSMS_API_URL = os.environ.get(
     "EGOSMS_API_URL",
